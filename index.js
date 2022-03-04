@@ -36,8 +36,12 @@ class Projectile{
         c.fillStyle = this.color;
         c.fill()
     }
-}
 
+    update(){
+        this.x = this.x + this.velocity.x
+        this.y = this.y + this.velocity.y
+    }
+}
 
 const x = canvas.width/2;
 const y = canvas.height/2;
@@ -45,10 +49,18 @@ const y = canvas.height/2;
 const player = new Player(x,y,30,'blue');
 player.draw();
 
-console.log(player);
+function animate() {
+    requestAnimationFrame(animate)
+    projectile.draw()
+    projectile.update()
+}
 
 window.addEventListener('click',(event) => {
     console.log(event)
-    const projectile = new Projectile(canvas.width/2,canvas.height/2,5,'red',null)
+    const projectile = new Projectile(canvas.width/2,canvas.height/2,5,'red',{
+        x: 1,
+        y:1
+    })
     projectile.draw()
+    projectile.update();
 })

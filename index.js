@@ -120,8 +120,11 @@ function animate() {
             // console.log(dist);
             if(dist - enemy.radius - projectile.radius < 1){
                 // console.log('remove from screen');
+                setTimeout(()=>{
                 enemies.splice(index, 1)
                 projectiles.splice(projectileIndex,1)
+                },0)
+                
             }
         })
     })

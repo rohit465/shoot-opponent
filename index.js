@@ -4,6 +4,11 @@ const c = canvas.getContext('2d')
 canvas.width = innerWidth
 canvas.height = innerHeight
 
+const scoreEl = document.querySelector("#scoreEl");
+const startGameBtn = document.querySelector("#startGameBtn");
+const modalEl = document.querySelector("#modalEl");
+const bigScoreEl = document.querySelector("#bigScoreEL");
+
 class Player {
     constructor(x, y, radius, color) {
         this.x = x;
@@ -67,6 +72,9 @@ class Enemy {
     }
 }
 
+const friction = 0.99;
+
+
 class Particle {
     constructor(x, y, radius, color, velocity) {
         this.x = x;
@@ -89,6 +97,8 @@ class Particle {
 
     update() {
         this.draw()
+        this.velocity.x *= friction;
+        this.velocity.y *= friction;
         this.x = this.x + this.velocity.x
         this.y = this.y + this.velocity.y
         this.alpha -= 0.01
@@ -98,10 +108,20 @@ class Particle {
 const x = canvas.width / 2;
 const y = canvas.height / 2;
 
-const player = new Player(x, y, 10, 'white');
-const projectiles = []
-const enemies = []
-const particles = []
+let player = new Player(x, y, 10, 'white');
+let projectiles = []
+let enemies = []
+let particles = []
+
+function init(){
+player = new Player(x, y, 10, 'white');
+ projectiles = []
+ enemies = []
+ particles = []
+ score = 0 
+ scoreEl.innerHTML = score
+ 
+}
 
 function spawnEnemies() {
     setInterval(() => {
@@ -113,7 +133,7 @@ function spawnEnemies() {
         if (Math.random() < 0.5) {
             x = Math.random() < 0.5 ? 0 - radius : canvas.width + radius
             y = Math.random() * canvas.height
-            
+
         }
         else {
             x = Math.random() + canvas.width
@@ -133,56 +153,73 @@ function spawnEnemies() {
         enemies.push(new Enemy(x, y, radius, color, velocity))
     }, 1000)
 }
-let animatonID 
+let animatonID
+let score = 0
 function animate() {
     animationID = requestAnimationFrame(animate)
     c.fillStyle = 'rgba(0, 0, 0, 0.1)'
-    c.fillRect(0, 0, canvas.width, canvas.height) 
+    c.fillRect(0, 0, canvas.width, canvas.height)
     player.draw();
-    particles.forEach(particle => {
-        particle.update()
+    particles.forEach((particle, index) => {
+        if (particle.alpha <= 0) {
+            particles.splice(index, 1);
+        }
+        else {
+            particle.update();
+        }
     })
     projectiles.forEach(projectile => {
         projectile.update()
 
-        if(projectile.x + projectile.radius < 0 || projectile.x - projectile.radius > canvas.width || projectile.y + projectile.radius < 0 || projectile.y - projectile.radius > canvas.height){
-            setTimeout(()=>{
-                
-                projectiles.splice(index,1)
-                },0)
+        if (projectile.x + projectile.radius < 0 || projectile.x - projectile.radius > canvas.width || projectile.y + projectile.radius < 0 || projectile.y - projectile.radius > canvas.height) {
+            setTimeout(() => {
+
+                projectiles.splice(index, 1)
+            }, 0)
         }
     })
 
-    enemies.forEach((enemy,index) => {
+    enemies.forEach((enemy, index) => {
         enemy.update()
 
         const dist = Math.hypot(player.x - enemy.x, player.y - enemy.y)
 
-        if(dist - enemy.radius - player.radius < 1){
+        if (dist - enemy.radius - player.radius < 1) {
             console.log("END GAME");
             cancelAnimationFrame(animationID);
+            modalEl.style.display = 'flex';
+            bigScoreEl.innerHTML = score;
         }
 
-        projectiles.forEach((projectile, projectileIndex) =>{
+        projectiles.forEach((projectile, projectileIndex) => {
             const dist = Math.hypot(projectile.x - enemy.x, projectile.y - enemy.y)
             // when projectiles touch enemy
-            if(dist - enemy.radius - projectile.radius < 1){
-                for(let i = 0; i < 8 ; i++){
-                    particles.push(new Particle(projectile.x, projectile.y, 3, enemy.color, {x: Math.random() - 0.5, y: Math.random() - 0.5}))
+            if (dist - enemy.radius - projectile.radius < 1) {
+
+                // create Explosions
+                for (let i = 0; i < enemy.radius * 2; i++) {
+                    particles.push(new Particle(projectile.x, projectile.y, Math.random() * 2, enemy.color, { x: (Math.random() - 0.5) * (Math.random() * 8), y: (Math.random() - 0.5) * (Math.random() * 8) }))
                 }
 
-                if(enemy.radius -10 > 5) {
+                if (enemy.radius - 10 > 5) {
+                    //Increase Score
+                    score += 100
+                    scoreEl.innerHTML = score
+
                     gsap.to(enemy, {
                         radius: enemy.radius - 10
                     })
-                    setTimeout(()=>{
-                        projectiles.splice(projectileIndex,1)
-                        },0)
-                }else{
-                    setTimeout(()=>{
+                    setTimeout(() => {
+                        projectiles.splice(projectileIndex, 1)
+                    }, 0)
+                } else {
+                    //remove from scene
+                    score += 250
+                    scoreEl.innerHTML = score
+                    setTimeout(() => {
                         enemies.splice(index, 1)
-                        projectiles.splice(projectileIndex,1)
-                        },0)
+                        projectiles.splice(projectileIndex, 1)
+                    }, 0)
                 }
             }
         })
@@ -204,8 +241,13 @@ addEventListener('click', (event) => {
     )
 })
 
-animate()
-spawnEnemies()
+startGameBtn.addEventListener('click', () => {
+    // console.log("go");
+    init();
+    animate();
+    spawnEnemies();
+    modalEl.style.display = 'none';
+})
 
 
 
